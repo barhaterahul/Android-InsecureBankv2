@@ -43,6 +43,7 @@ public class LoginActivity extends Activity {
 	//  if the user has logged in successfully earlier
 	Button fillData_button;
 	String usernameBase64ByteString;
+	private Button Biometric_button;
 	public static final String MYPREFS = "mySharedPreferences";
 
 	@Override

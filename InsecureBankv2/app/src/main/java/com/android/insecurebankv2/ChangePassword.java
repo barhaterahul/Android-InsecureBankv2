@@ -28,11 +28,15 @@ import org.apache.http.message.BasicNameValuePair;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import android.Manifest;
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.telephony.TelephonyManager;
@@ -58,10 +62,10 @@ public class ChangePassword extends Activity {
 	// The Button that maps to the change password-Submit button 
 	Button changePassword_button;
 	//	Regex to ensure password is complex enough
-    private static final String PASSWORD_PATTERN = 
-            "((?=.*\\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%]).{6,20})";
+	private static final String PASSWORD_PATTERN =
+			"((?=.*\\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%]).{6,20})";
 	private Pattern pattern;
-    private Matcher matcher;
+	private Matcher matcher;
 	String uname;
 	String result;
 	BufferedReader reader;
@@ -75,7 +79,7 @@ public class ChangePassword extends Activity {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_change_password);
 
-        // Get Server details from Shared Preference file.
+		// Get Server details from Shared Preference file.
 		serverDetails = PreferenceManager.getDefaultSharedPreferences(this);
 		serverip = serverDetails.getString("serverip", null);
 		serverport = serverDetails.getString("serverport", null);
@@ -87,7 +91,7 @@ public class ChangePassword extends Activity {
 		textView_Username = (TextView) findViewById(R.id.textView_Username);
 		textView_Username.setText(uname);
 
-        // Manage the change password button click
+		// Manage the change password button click
 		changePassword_button = (Button) findViewById(R.id.button_newPasswordSubmit);
 		changePassword_button.setOnClickListener(new View.OnClickListener() {
 
@@ -98,10 +102,11 @@ public class ChangePassword extends Activity {
 			}
 		});
 	}
-	class RequestChangePasswordTask extends AsyncTask < String, String, String > {
+
+	class RequestChangePasswordTask extends AsyncTask<String, String, String> {
 
 		@Override
-		protected String doInBackground(String...params) {
+		protected String doInBackground(String... params) {
 
 			try {
 				postData(params[0]);
@@ -116,7 +121,8 @@ public class ChangePassword extends Activity {
 		protected void onPostExecute(Double result) {
 
 		}
-		protected void onProgressUpdate(Integer...progress) {
+
+		protected void onProgressUpdate(Integer... progress) {
 
 		}
 
@@ -127,7 +133,7 @@ public class ChangePassword extends Activity {
 		public void postData(String valueIWantToSend) throws ClientProtocolException, IOException, JSONException, InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException {
 			HttpClient httpclient = new DefaultHttpClient();
 			HttpPost httppost = new HttpPost(protocol + serverip + ":" + serverport + "/changepassword");
-			List < NameValuePair > nameValuePairs = new ArrayList < NameValuePair > (2);
+			List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(2);
 
 			/*
 			   Delete below test accounts once the application goes into production phase.
@@ -142,14 +148,15 @@ public class ChangePassword extends Activity {
 			matcher = pattern.matcher(changePassword_text.getText().toString());
 
 			// Check if the password is complex enough
-			boolean isStrong= matcher.matches();
-			if (isStrong){
+			boolean isStrong = matcher.matches();
+			if (isStrong) {
 				responseBody = httpclient.execute(httppost);
 				InputStream in = responseBody.getEntity().getContent();
-				result = convertStreamToString( in );
+				result = convertStreamToString(in);
 				result = result.replace("\n", "");
 
 				runOnUiThread(new Runnable() {
+					@TargetApi(Build.VERSION_CODES.M)
 					@Override
 					public void run() {
 						if (result != null) {
@@ -160,8 +167,18 @@ public class ChangePassword extends Activity {
 									jsonObject = new JSONObject(result);
 									String login_response_message = jsonObject.getString("message");
 									Toast.makeText(getApplicationContext(), login_response_message + ". Restart application to Continue.", Toast.LENGTH_LONG).show();
-                                    TelephonyManager phoneManager = (TelephonyManager)getApplicationContext().getSystemService(Context.TELEPHONY_SERVICE);
-                                    String phoneNumber = phoneManager.getLine1Number();
+									TelephonyManager phoneManager = (TelephonyManager) getApplicationContext().getSystemService(Context.TELEPHONY_SERVICE);
+									if (checkSelfPermission(Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED && checkSelfPermission(Manifest.permission.READ_PHONE_NUMBERS) != PackageManager.PERMISSION_GRANTED && checkSelfPermission(Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
+										// TODO: Consider calling
+										//    Activity#requestPermissions
+										// here to request the missing permissions, and then overriding
+										//   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+										//                                          int[] grantResults)
+										// to handle the case where the user grants the permission. See the documentation
+										// for Activity#requestPermissions for more details.
+										return;
+									}
+									String phoneNumber = phoneManager.getLine1Number();
                                     System.out.println("phonno:"+phoneNumber);
 
                                     /*
